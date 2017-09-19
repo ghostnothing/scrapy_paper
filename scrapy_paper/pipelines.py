@@ -45,7 +45,7 @@ class ScrapyPaperPipeline(object):
         # 只保留中文字符、英文字母、数字
         pattern = re.compile(u'[a-zA-Z0-9\u4e00-\u9fa5]+')
         filter_data = re.findall(pattern, paper_title)
-        paper_title = u''.join(filter_data)
+        paper_title = u' '.join(filter_data)
         return paper_title
 
     def gen_file(self, paper_title, paper_url, content_type, spider_name):
@@ -57,19 +57,7 @@ class ScrapyPaperPipeline(object):
         paper_file = os.path.join(file_path, paper_title + suffix)
         return paper_file
 
-    def strip_item(self, item):
-        """
-        delete useless characters
-        :param item:
-        :return:
-        """
-        for key, value in item.items():
-            if isinstance(value, str):
-                item[key] = value.strip()
-            if key == 'paper_abstract' and not item['paper_abstract']:
-                log.debug("root url: {} url: {} error paper_abstract is None ".format(item['response'].url, item['paper_url']))
-
-    def write_file(self, paper_file, content):
+    def save_paper(self, paper_file, content):
         if not os.path.isfile(paper_file):
             with open(paper_file, "wb+") as fp:
                 if isinstance(content, bytes):
@@ -78,9 +66,6 @@ class ScrapyPaperPipeline(object):
                     fp.write(content.encode('utf-8'))
 
     def common_process(self, item, spider):
-        # delete useless characters
-        self.strip_item(item)
-
         # add database
         dic = dict(item)
         self.save_abstract(dic)
@@ -92,7 +77,7 @@ class ScrapyPaperPipeline(object):
         content_type = item['response'].headers['Content-Type']
         spider_name = spider.name
         paper_file = self.gen_file(paper_title, paper_url, content_type, spider_name)
-        self.write_file(paper_file, content)
+        self.save_paper(paper_file, content)
         self.db.set_sp_file(paper_url_=paper_url, paper_file_=os.path.basename(paper_file))
         return item
 
@@ -120,5 +105,5 @@ class ScrapyPaperPipeline(object):
             content_type = response.headers['Content-Type']
             spider_name = paper.paper_spider
             paper_file = self.gen_file(paper_title, paper_url, content_type, spider_name)
-            self.write_file(paper_file, content)
+            self.save_paper(paper_file, content)
             self.db.set_sp_file(paper_url_=paper_url, paper_file_=paper_file)

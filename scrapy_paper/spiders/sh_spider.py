@@ -30,12 +30,13 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
         for url in urls:
             yield scrapy.http.Request(url=url, callback=self.parse)
 
-    def transform_time(self, time_):
+    def paper_time(self, response, news_info, xpath):
         """
         转换时间格式为TIME_FORMAT
         :param time_:       "8小时 前","2分钟 前", "2017年09月13日"
         :return:            TIME_FORMAT
         """
+        time_ = self.fetch_xpath(news_info, xpath)
         if not time_:
             return time_
 
@@ -58,69 +59,46 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
                 time_ = datetime.strptime(time_, time_format).strftime(TIME_FORMAT)
             except Exception as e:
                 pass
-        log.debug("home: {} time:{}".format(HOME_PAGE, time_))
+        log.debug("{} time:{}".format(self.name, time_))
         return time_
 
-    def parse(self, response):
-        meta = response.meta
-        news_list = response.xpath(SELECTOR_NEWS_LIST)
-        if not news_list:
-            return
-        for news in news_list:
-            if SELECTOR_NEWS_INFO:
-                news_info = news.xpath(SELECTOR_NEWS_INFO)
-            else:
-                news_info = news
+    def paper_tags(self, response, news_info, xpath):
+        paper_tags = []
+        news_info = news_info.xpath("../a[@class='new_img_title']")
+        for tag in news_info.xpath(xpath):
+            tag_info = dict(tag_name=tag.extract(),
+                            tag_url="")
+            paper_tags.append(tag_info)
+        return paper_tags
 
+    def parse(self, response):
+        if not self.check_param(response, SELECTOR_NEWS_LIST):
+            return
+
+        news_list = response.xpath(SELECTOR_NEWS_LIST)
+        for news in news_list:
             paper_title = r".//h1/text()"
             paper_url = r"./a/@href"
-            tags = r".//div[@class='new_img']/span/text()"
+            paper_tags = r".//div[@class='new_img']/span/text()"
             author_name = r"./div[@class='avatar_box']/a/p/text()"
             author_link = r"./div[@class='avatar_box']/a/@href"
+            author_identity = ""
             paper_time = r"./div[@class='new_bottom']/p[@class='newtime']/text()"
             paper_abstract = r"./p[@class='new_context']/text()"
             paper_look_number = r"./div[@class='new_bottom']//div[@class='read ']/span/text()"
             paper_look_comments = r"./div[@class='new_bottom']//div[@class='comment ']/span/text()"
 
-            paper_title = self.fetch_xpath(news_info, paper_title)
-            paper_url = self.fetch_xpath(news_info, paper_url)
-            author_name = self.fetch_xpath(news_info, author_name)
-            author_link = self.fetch_xpath(news_info, author_link)
-            author_identity = False
-            paper_time = self.fetch_xpath(news_info, paper_time)
-            paper_time = self.transform_time(paper_time)
-            paper_abstract = self.fetch_xpath(news_info, paper_abstract)
-            paper_tags = []
-            for tag in news_info.xpath(tags):
-                tag_info = dict(tag_name=tag.extract(),
-                                tag_url="")
-                paper_tags.append(tag_info)
-            paper_look_number = self.fetch_xpath(news_info, paper_look_number, default_="0")
-            paper_look_number = "".join(paper_look_number.split(","))
-            paper_look_comments = self.fetch_xpath(news_info, paper_look_comments, default_="0")
+            dict_ = dict(paper_title=paper_title, paper_url=paper_url, author_name=author_name, author_link=author_link,
+                         author_identity=author_identity, paper_time=paper_time, paper_abstract=paper_abstract,
+                         paper_tags=paper_tags, paper_look_number=paper_look_number,
+                         paper_look_comments=paper_look_comments, paper_spider=self.name)
 
-            item = ScrapyPaperItem(paper_title=paper_title,
-                                   paper_url=paper_url,
-                                   author_name=author_name,
-                                   author_link=author_link,
-                                   author_identity=author_identity,
-                                   paper_time=paper_time,
-                                   paper_abstract=paper_abstract,
-                                   paper_tags=paper_tags,
-                                   paper_look_number=paper_look_number,
-                                   paper_look_comments=paper_look_comments,
-                                   paper_spider=self.name)
-
-            if paper_url and not self.db.exist_sp_paper(paper_url):
-                meta_tmp = meta.copy()
-                meta_tmp["item"] = item
-                yield scrapy.Request(paper_url, meta=meta_tmp, callback=self.parse_paper)
-            elif paper_url and self.db.exist_sp_paper(paper_url, HOME_PAGE):
-                msg = u"{} url: {} already in database".format(self.name, paper_url)
-                log.debug(msg)
+            item, paper_url = self.make_item(response, news, SELECTOR_NEWS_INFO, dict_)
+            paper_req = self.make_paper_req(response, item, paper_url)
+            if paper_req is None:
                 return
-            else:
-                log.debug("{} paper_url is None".format(HOME_PAGE))
+            elif isinstance(paper_req, list):
+                yield scrapy.http.Request(paper_req[0], **paper_req[1])
 
         next_page = "//div[@id='prm_btn']/a/@href"
         next_page = self.fetch_xpath(response, next_page)
