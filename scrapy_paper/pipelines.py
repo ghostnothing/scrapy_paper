@@ -6,7 +6,6 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
 import os
-import re
 import logging
 import traceback
 from scrapy_paper.db.db_base import DataBase
@@ -41,19 +40,11 @@ class ScrapyPaperPipeline(object):
             suffix = ""
         return suffix
 
-    def transform_title(self, paper_title):
-        # 只保留中文字符、英文字母、数字
-        pattern = re.compile(u'[a-zA-Z0-9\u4e00-\u9fa5]+')
-        filter_data = re.findall(pattern, paper_title)
-        paper_title = u' '.join(filter_data)
-        return paper_title
-
     def gen_file(self, paper_title, paper_url, content_type, spider_name):
         suffix = self.gen_suffix(paper_url, content_type)
         file_path = os.path.join(FILE_PATH, spider_name)
         if not os.path.isdir(file_path):
             os.mkdir(file_path)
-        paper_title = self.transform_title(paper_title)
         paper_file = os.path.join(file_path, paper_title + suffix)
         return paper_file
 

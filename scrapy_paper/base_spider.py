@@ -9,6 +9,7 @@
 
 
 import os
+import re
 import sys
 import scrapy
 import logging
@@ -31,6 +32,7 @@ else:
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 CURRENT_PATH = os.path.split(os.path.realpath(__file__))[0]
+PAPER_RESPONSE = "response"
 PAPER_TITLE = "paper_title"
 PAPER_URL = "paper_url"
 AUTHOR_NAME = "author_name"
@@ -69,7 +71,7 @@ class BaseSpider(object):
         """
         log.debug("{} start parse url: {}".format(response.meta["item"]["paper_spider"], response.url))
         item = response.meta["item"]
-        item["response"] = response
+        item[PAPER_RESPONSE] = response
         return item
 
     def fetch_xpath(self, etree_, xpath_, default_="", node_=0):
@@ -177,6 +179,13 @@ class BaseSpider(object):
             abstract_dict_[name_] = self.fetch_xpath(news_info, xpath)
         return abstract_dict_
 
+    def transform_title(self, paper_title):
+        # 只保留中文字符、英文字母、数字
+        pattern = re.compile(u'[a-zA-Z0-9\u4e00-\u9fa5]+')
+        filter_data = re.findall(pattern, paper_title)
+        paper_title = u' '.join(filter_data)
+        return paper_title
+
     def strip_item(self, item):
         """
         delete useless characters
@@ -186,9 +195,13 @@ class BaseSpider(object):
         for key, value in item.items():
             if isinstance(value, str):
                 item[key] = value.strip()
+
+            if key in [PAPER_TITLE, PAPER_ABSTRACT]:
+                item[key] = self.transform_title(value)
+
             if key == 'paper_abstract' and not item['paper_abstract']:
                 log.warning(
-                    "root url: {} url: {} paper_abstract is None ".format(item['response'].url, item['paper_url']))
+                    "item {} paper_abstract is None ".format(dict(item)))
 
     def make_item(self, response, news, news_info_x, dict_):
         """
