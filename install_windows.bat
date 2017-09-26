@@ -4,7 +4,7 @@ cls
 set current_path=%~dp0
 set log_file=%TMP%\scrapy_paper.log
 
-echo "scrapy_paper start time :%DATE% %TIME%" >> %log_file%
+echo "scrapy_paper start time: %DATE% %TIME%" >> %log_file%
 
 IF /I "%1" == "-i" (
     call :InstallSchtasks
@@ -23,7 +23,7 @@ IF /I "%1" == "-u" (
 )
 )
 
-echo "scrapy_paper end time : %DATE% %TIME%" >> %log_file%
+echo "scrapy_paper end time: %DATE% %TIME%" >> %log_file%
 exit /b 0
 
 
@@ -38,8 +38,8 @@ exit /b 0
     exit /b 0
 
 :ScrapyAll
-echo "scrapy crawlall  start time: %DATE% %TIME%" >> %log_file%
-pushd %current_path%
-scrapy crawlall >> %log_file%
-echo "scrapy crawlall  end time: %DATE% %TIME%" >> %log_file%
-exit /b 0
+    echo "scrapy crawlall  start time: %DATE% %TIME%" >> %log_file%
+    pushd %current_path%
+    scrapy crawlall >> %log_file%
+    echo "scrapy crawlall  end time: %DATE% %TIME%" >> %log_file%
+    exit /b 0
