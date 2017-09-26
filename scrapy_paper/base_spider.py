@@ -248,7 +248,7 @@ class BaseSpider(object):
             msg = u"{} url: {} already in database".format(spider_name, paper_url)
             log.debug(msg)
             self.db.up_sp_abstract(**dict(item))
-            return "continue"
+            return
         else:
             log.debug("{} paper_url is None".format(spider_name))
             return "continue"
