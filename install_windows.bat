@@ -29,7 +29,7 @@ exit /b 0
 
 :InstallSchtasks
     echo "add schtasks scrapy_paper : %~f0" >> %log_file%
-    schtasks /create /sc minute /mo 1 /tn "scrapy_paper" /tr "cmd /c %~f0 -r"
+    schtasks /create /sc minute /mo 60 /tn "scrapy_paper" /tr "cmd /c %~f0 -r"
     exit /b 0
 
 :UnInstallSchtasks
