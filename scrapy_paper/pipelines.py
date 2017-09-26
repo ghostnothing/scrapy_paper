@@ -12,7 +12,7 @@ from scrapy_paper.db.db_base import DataBase
 from scrapy_paper.base_spider import urlopen
 log = logging.getLogger(os.path.split(os.path.realpath(__file__))[1])
 CURRENT_PATH = os.path.split(os.path.realpath(__file__))[0]
-FILE_PATH = os.path.realpath(os.path.join(CURRENT_PATH, "..\..\paper_file"))
+FILE_PATH = os.path.realpath(os.path.join(CURRENT_PATH, "..{}..{}paper_file".format(os.sep, os.sep)))
 
 
 class ScrapyPaperPipeline(object):
