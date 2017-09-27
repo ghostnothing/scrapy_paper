@@ -77,7 +77,7 @@ class Config(object):
         @param cfg_file_: config file name.
         @param encoding_: config file encoding, default utf-8.
         """
-        self.file_config(cfg_file_, encoding_)
+        self.file_config(os.path.join(CURRENT_PATH, cfg_file_), encoding_)
 
     def file_config(self, file_name_, encoding_):
         config = ConfigParser.ConfigParser()

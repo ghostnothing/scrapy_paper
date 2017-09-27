@@ -43,7 +43,7 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
         time_ = ""
         year = self.fetch_xpath(news_info, xpath, node_=0)
         month_day = self.fetch_xpath(news_info, xpath, node_=1)
-        if not year or month_day:
+        if not year or not month_day:
             return time_
         time_ = "{}-{}".format(year, month_day)
         time_ = time_.split()[-1]
