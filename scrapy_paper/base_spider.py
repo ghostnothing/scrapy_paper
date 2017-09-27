@@ -25,9 +25,11 @@ if sys.version >= '3':
     from urllib.request import urlopen
     from urllib import parse
     from urllib.parse import urlencode
+    import configparser as ConfigParser
 else:
     PYTHON3 = False
     import urllib
+    import ConfigParser
     from urllib import urlopen, urlencode
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -51,12 +53,90 @@ NAME_LIST = [PAPER_TITLE, PAPER_URL, AUTHOR_NAME, AUTHOR_LINK, AUTHOR_IDENTITY, 
 log = logging.getLogger(os.path.split(os.path.realpath(__file__))[1])
 
 
+class Dictionary(dict):
+    """custom dict."""
+
+    def __getattr__(self, key):
+        return self.get(key, None)
+
+    def __hasattr__(self, key):
+        if key in self:
+            return True
+        else:
+            return False
+
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+
+class Config(object):
+    """Configuration file parser."""
+
+    def __init__(self, cfg_file_="scrapy_paper.cfg", encoding_='utf-8'):
+        """
+        @param cfg_file_: config file name.
+        @param encoding_: config file encoding, default utf-8.
+        """
+        self.file_config(cfg_file_, encoding_)
+
+    def file_config(self, file_name_, encoding_):
+        config = ConfigParser.ConfigParser()
+        config.read(file_name_, encoding=encoding_)
+
+        for section in config.sections():
+            setattr(self, section, Dictionary())
+            for name, raw_value in config.items(section):
+                try:
+                    # Ugly fix to avoid '0' and '1' to be parsed as a
+                    # boolean value.
+                    # We raise an exception to goto fail^w parse it
+                    # as integer.
+                    if config.get(section, name) in ["0", "1"]:
+                        raise ValueError
+
+                    value = config.getboolean(section, name)
+                except ValueError:
+                    try:
+                        value = config.getint(section, name)
+                    except ValueError:
+                        try:
+                            value = config.get(section, name).decode(encoding_)
+                        except Exception as e:
+                            value = config.get(section, name)
+
+                setattr(getattr(self, section), name, value)
+
+    def get(self, section_name_):
+        """Get option.
+        @param section_name_: section to fetch.
+        @return: option value.
+        """
+        if not hasattr(self, section_name_):
+            return None
+        else:
+            return getattr(self, section_name_)
+
+    def get_option(self, section_name_, option_name_, default_=None):
+        """Get option.
+        @param section_name_: section to fetch.
+        @param option_name_: option name to fetch.
+        @param default_: The default value returned when it does not exist
+        @return: option value.
+        """
+        section_dict = self.get(section_name_)
+        if not section_dict:
+            return default_
+        else:
+            return section_dict.get(option_name_, default_)
+
+
 class BaseSpider(object):
 
     def __init__(self):
         super(BaseSpider, self).__init__()
         self.page = 2
         self.db = DataBase()
+        self.cfg = Config()
 
     def fetch_list(self, list_, index_):
         if index_ < len(list_):
@@ -230,6 +310,15 @@ class BaseSpider(object):
         self.strip_item(item)
         return item, abstract_dict[PAPER_URL]
 
+    def forced_crawling(self, item):
+        forced_crawling = self.cfg.get_option("settings", "forced_crawling")
+        if forced_crawling:
+            paper_time = datetime.strptime(item[PAPER_TIME], TIME_FORMAT)
+            paper_tge = self.cfg.get_option("forced_crawling", "paper_time_ge")
+            if paper_tge and paper_time >= datetime.strptime(paper_tge.strip("\""), TIME_FORMAT):
+                return True
+        return False
+
     def make_paper_req(self, response, item, paper_url):
         """
         Generate article request parameters
@@ -248,6 +337,8 @@ class BaseSpider(object):
             msg = u"{} url: {} already in database".format(spider_name, paper_url)
             log.debug(msg)
             self.db.up_sp_abstract(**dict(item))
+            if self.forced_crawling(item):
+                return "continue"
             return
         else:
             log.debug("{} paper_url is None".format(spider_name))

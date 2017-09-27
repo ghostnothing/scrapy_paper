@@ -27,8 +27,7 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
         :return: 
         """
         urls = [
-            # HOME_PAGE
-            "http://www.freebuf.com/page/500"
+            HOME_PAGE
         ]
 
         for url in urls:
