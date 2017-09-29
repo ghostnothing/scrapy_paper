@@ -129,6 +129,28 @@ class Config(object):
         else:
             return section_dict.get(option_name_, default_)
 
+    def enabled(self, section_name_, default_=False):
+        """
+        Determine if the configuration is enabled
+        @param section_name_: section to fetch.
+        @param default_: The default value returned when it does not exist
+        @return: True | False.
+        """
+        return self.get_option("settings", section_name_, default_)
+
+    def get_setting_option(self, section_name_, option_name_, default_=None):
+        """Get option.
+        @param section_name_: section to fetch.
+        @param option_name_: option name to fetch.
+        @param default_: The default value returned when it does not exist
+        @return: option value.
+        """
+        enabled = self.get_option("settings", section_name_)
+        if not enabled:
+            return default_
+        else:
+            return self.get_option(section_name_, option_name_, default_)
+
 
 class BaseSpider(object):
 
@@ -308,6 +330,10 @@ class BaseSpider(object):
         item = ScrapyPaperItem(**abstract_dict)
         # delete useless characters
         self.strip_item(item)
+
+        # add paper abstract info to database
+        self.db.add_sp_abstract(**dict(item))
+
         return item, abstract_dict[PAPER_URL]
 
     def forced_crawling(self, item):
@@ -327,21 +353,21 @@ class BaseSpider(object):
         :param paper_url:
         :return:
         """
-        spider_name = item[PAPER_SPIDER]
-        if paper_url and not self.db.exist_sp_paper(paper_url):
+        paper_spider = item[PAPER_SPIDER]
+        if paper_url and not self.db.exist_sp_paper(paper_url=paper_url) and self.cfg.enabled("save_paper_file"):
             meta_tmp = response.meta.copy()
             meta_tmp["item"] = item
             headers = self.make_header(paper_url)
             return [paper_url, dict(meta=meta_tmp, callback=self.parse_paper, headers=headers)]
-        elif paper_url and self.db.exist_sp_paper(paper_url, spider_name):
-            msg = u"{} url: {} already in database".format(spider_name, paper_url)
+        elif paper_url and self.db.exist_sp_paper(paper_url=paper_url, paper_spider=paper_spider):
+            msg = u"{} url: {} already in database".format(paper_spider, paper_url)
             log.debug(msg)
             self.db.up_sp_abstract(**dict(item))
             if self.forced_crawling(item):
                 return "continue"
             return
         else:
-            log.debug("{} paper_url is None".format(spider_name))
+            log.debug("{} paper_url is None".format(paper_spider))
             return "continue"
 
     def make_next_req(self, next_page):

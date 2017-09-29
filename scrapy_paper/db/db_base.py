@@ -253,29 +253,20 @@ class DataBase(object):
             log.error("get_or_create_obj error: {0}".format(e))
         return db_obj
 
-    def exist_sp_paper(self, paper_url_, paper_spider_=None):
+    def exist_sp_paper(self, **kwargs):
         session = self.Session()
         try:
-            obj = session.query(PaperAbstract).filter(PaperAbstract.paper_url == paper_url_)
-            if paper_spider_ is not None:
-                obj = obj.filter(PaperAbstract.paper_spider == paper_spider_)
+            obj = session.query(PaperAbstract).filter_by(**kwargs)
             return obj.first()
         except Exception as e:
             log.error("exist_sp_paper error: {0}".format(traceback.format_exc))
-            log.error("paper_url: {0}".format(paper_url_))
         finally:
             session.close()
 
-    def query_sp_paper(self, paper_url_=None, paper_spider_=None, paper_file_=None):
+    def query_sp_paper(self, **kwargs):
         session = self.Session()
         try:
-            rows = session.query(PaperAbstract)
-            if paper_url_ is not None:
-                rows = rows.filter(PaperAbstract.paper_url == paper_url_)
-            if paper_spider_ is not None:
-                rows = rows.filter(PaperAbstract.paper_spider == paper_spider_)
-            if paper_file_ is not None:
-                rows = rows.filter(PaperAbstract.paper_file == paper_file_)
+            rows = session.query(PaperAbstract).filter_by(**kwargs)
             return rows.all()
         except Exception as e:
             log.error("query_sp_paper error: {0}".format(traceback.format_exc))
@@ -292,25 +283,11 @@ class DataBase(object):
         finally:
             session.close()
 
-    def set_sp_file(self, paper_url_, paper_file_):
-        session = self.Session()
-        try:
-            # if url not in database then add
-            obj = session.query(PaperAbstract).filter(PaperAbstract.paper_url == paper_url_).first()
-            if obj:
-                obj.paper_file = paper_file_
-                session.commit()
-        except Exception as e:
-            error = traceback.format_exc()
-            log.error("set_sp_file error: {0}".format(error))
-        finally:
-            session.close()
-
-    def up_sp_abstract(self, **abstract):
+    def up_sp_abstract(self, paper_url, **abstract):
 
         session = self.Session()
         try:
-            obj = session.query(PaperAbstract).filter(PaperAbstract.paper_url == abstract["paper_url"]).first()
+            obj = session.query(PaperAbstract).filter(PaperAbstract.paper_url == paper_url).first()
             if obj:
                 for name, value in abstract.items():
                     if name == 'paper_tags':

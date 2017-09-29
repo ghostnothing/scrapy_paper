@@ -9,7 +9,7 @@ import os
 import logging
 import traceback
 from scrapy_paper.db.db_base import DataBase
-from scrapy_paper.base_spider import urlopen
+from scrapy_paper.base_spider import urlopen, Config
 log = logging.getLogger(os.path.split(os.path.realpath(__file__))[1])
 CURRENT_PATH = os.path.split(os.path.realpath(__file__))[0]
 FILE_PATH = os.path.realpath(os.path.join(CURRENT_PATH, "..{}..{}paper_file".format(os.sep, os.sep)))
@@ -19,9 +19,16 @@ class ScrapyPaperPipeline(object):
 
     def __init__(self):
         self.db = DataBase()
+        self.cfg = Config()
+        self.file_path = None
+        self.init_env()
 
-    def save_abstract(self, log_info):
-        self.db.add_sp_abstract(**log_info)
+    def init_env(self):
+        cfg_file_path = self.cfg.get_setting_option("save_paper_file", "paper_path")
+        if cfg_file_path:
+            self.file_path = os.path.abspath(cfg_file_path)
+        else:
+            self.file_path = FILE_PATH
 
     def gen_suffix(self, paper_url="", content_type=""):
         if isinstance(content_type, bytes):
@@ -42,7 +49,7 @@ class ScrapyPaperPipeline(object):
 
     def gen_file(self, paper_title, paper_url, content_type, spider_name):
         suffix = self.gen_suffix(paper_url, content_type)
-        file_path = os.path.join(FILE_PATH, spider_name)
+        file_path = os.path.join(self.file_path, spider_name)
         if not os.path.isdir(file_path):
             os.mkdir(file_path)
         paper_file = os.path.join(file_path, paper_title + suffix)
@@ -57,11 +64,7 @@ class ScrapyPaperPipeline(object):
                     fp.write(content.encode('utf-8'))
 
     def common_process(self, item, spider):
-        # add database
-        dic = dict(item)
-        self.save_abstract(dic)
-
-        # save file
+        # save paper file
         content = item['response'].body
         paper_title = item['paper_title']
         paper_url = item["paper_url"]
@@ -69,15 +72,15 @@ class ScrapyPaperPipeline(object):
         spider_name = spider.name
         paper_file = self.gen_file(paper_title, paper_url, content_type, spider_name)
         self.save_paper(paper_file, content)
-        self.db.set_sp_file(paper_url_=paper_url, paper_file_=os.path.basename(paper_file))
+        self.db.up_sp_abstract(paper_url, paper_file=os.path.basename(paper_file))
         return item
 
     def sh_spider(self, item, spider):
         return self.common_process(item, spider)
 
     def process_item(self, item, spider):
-        if not os.path.isdir(FILE_PATH):
-            os.mkdir(FILE_PATH)
+        if not os.path.isdir(self.file_path):
+            os.mkdir(self.file_path)
         if hasattr(self, spider.name):
             func = getattr(self, spider.name)
             return func(item, spider)
@@ -97,4 +100,4 @@ class ScrapyPaperPipeline(object):
             spider_name = paper.paper_spider
             paper_file = self.gen_file(paper_title, paper_url, content_type, spider_name)
             self.save_paper(paper_file, content)
-            self.db.set_sp_file(paper_url_=paper_url, paper_file_=paper_file)
+            self.db.up_sp_abstract(paper_url, paper_file=paper_file)
