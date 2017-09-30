@@ -307,7 +307,6 @@ class BaseSpider(object):
 
     def make_item(self, response, news, news_info_x, dict_):
         """
-
         :param response:
         :param news:
         :param news_info_x:
@@ -331,18 +330,24 @@ class BaseSpider(object):
         # delete useless characters
         self.strip_item(item)
 
-        # add paper abstract info to database
-        self.db.add_sp_abstract(**dict(item))
-
         return item, abstract_dict[PAPER_URL]
 
     def forced_crawling(self, item):
+        """
+        To determine whether to continue to crawl：
+        1. If the crawler did not crawl the paper, continue to crawl;
+        2. In the crawl date condition, continue to crawl;
+        :param item:
+        :return:
+        """
         forced_crawling = self.cfg.get_option("settings", "forced_crawling")
         if forced_crawling:
             paper_time = datetime.strptime(item[PAPER_TIME], TIME_FORMAT)
             paper_tge = self.cfg.get_option("forced_crawling", "paper_time_ge")
             if paper_tge and paper_time >= datetime.strptime(paper_tge.strip("\""), TIME_FORMAT):
                 return True
+        elif not self.db.exist_sp_paper(paper_url=item[PAPER_URL], paper_spider=item[PAPER_SPIDER]):
+            return True
         return False
 
     def make_paper_req(self, response, item, paper_url):
@@ -351,24 +356,38 @@ class BaseSpider(object):
         :param response:
         :param item:
         :param paper_url:
-        :return:
+        :return:        None: stop spider;  "continue": continue next paper; [paper_url, dict]: crawl paper
         """
+        continue_str = "continue"
         paper_spider = item[PAPER_SPIDER]
-        if paper_url and not self.db.exist_sp_paper(paper_url=paper_url) and self.cfg.enabled("save_paper_file"):
+        if not paper_url:
+            return continue_str
+
+        if not self.forced_crawling(item):
+            return None
+
+        # add paper abstract info to database
+        if not self.db.exist_sp_paper(paper_url=paper_url):
+            self.db.add_sp_abstract(**dict(item))
+        else:
+            # forced_crawling is True, update paper abstract info to database
+            msg = u"{} url: {} already in database".format(paper_spider, paper_url)
+            log.debug(msg)
+            self.db.up_sp_abstract(**dict(item))
+
+        # crawl paper
+        if self.cfg.enabled("save_paper_file") and self.db.exist_sp_paper(paper_url=paper_url, paper_file=""):
             meta_tmp = response.meta.copy()
             meta_tmp["item"] = item
             headers = self.make_header(paper_url)
             return [paper_url, dict(meta=meta_tmp, callback=self.parse_paper, headers=headers)]
-        elif paper_url and self.db.exist_sp_paper(paper_url=paper_url, paper_spider=paper_spider):
-            msg = u"{} url: {} already in database".format(paper_spider, paper_url)
-            log.debug(msg)
-            self.db.up_sp_abstract(**dict(item))
-            if self.forced_crawling(item):
-                return "continue"
-            return
-        else:
-            log.debug("{} paper_url is None".format(paper_spider))
-            return "continue"
+
+        return continue_str
+
+    def gen_paper_req(self, response, news, news_info_x, dict_):
+        item, paper_url = self.make_item(response, news, news_info_x, dict_)
+        paper_req = self.make_paper_req(response, item, paper_url)
+        return paper_req
 
     def make_next_req(self, next_page):
         pass

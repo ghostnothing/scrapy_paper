@@ -93,8 +93,8 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
                          paper_tags=paper_tags, paper_look_number=paper_look_number,
                          paper_look_comments=paper_look_comments, paper_spider=self.name)
 
-            item, paper_url = self.make_item(response, news, SELECTOR_NEWS_INFO, dict_)
-            paper_req = self.make_paper_req(response, item, paper_url)
+            paper_req = self.gen_paper_req(response, news, SELECTOR_NEWS_INFO, dict_)
+
             if paper_req is None:
                 return
             elif isinstance(paper_req, list):

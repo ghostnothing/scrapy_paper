@@ -98,7 +98,7 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
         headers["Host"] = "www.mottoin.com"
         return next_page, headers, format_data
 
-    def make_item_(self, response, news):
+    def gen_paper_req_(self, response, news):
         paper_title = "./div[@class='item-content']/h2[@class='item-title']/a/@title"
         paper_url = "./div[@class='item-content']/h2[@class='item-title']/a/@href"
         tag_name = "./div[@class='item-img']/a[@class='item-category']/text()"
@@ -117,8 +117,8 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
                      paper_tags=paper_tags, paper_look_number=paper_look_number,
                      paper_look_comments=paper_look_comments, paper_spider=self.name)
 
-        item, paper_url = self.make_item(response, news, SELECTOR_NEWS_INFO, dict_)
-        return item, paper_url
+        paper_req = self.gen_paper_req(response, news, SELECTOR_NEWS_INFO, dict_)
+        return paper_req
 
     def parse_next_page(self, response):
         if not self.check_param(response, "//li"):
@@ -126,8 +126,7 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
 
         news_list = response.xpath("//li")
         for news in news_list:
-            item, paper_url = self.make_item_(response, news)
-            paper_req = self.make_paper_req(response, item, paper_url)
+            paper_req = self.gen_paper_req_(response, news)
             if paper_req is None:
                 return
             elif isinstance(paper_req, list):
@@ -142,8 +141,7 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
 
         news_list = response.xpath(SELECTOR_NEWS_LIST)
         for news in news_list:
-            item, paper_url = self.make_item_(response, news)
-            paper_req = self.make_paper_req(response, item, paper_url)
+            paper_req = self.gen_paper_req_(response, news)
             if paper_req is None:
                 return
             elif isinstance(paper_req, list):

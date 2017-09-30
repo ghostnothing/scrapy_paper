@@ -283,61 +283,40 @@ class DataBase(object):
         finally:
             session.close()
 
-    def up_sp_abstract(self, paper_url, **abstract):
+    def up_sp_abstract(self, **abstract):
+        return self.add_sp_abstract(update=True, **abstract)
 
-        session = self.Session()
-        try:
-            obj = session.query(PaperAbstract).filter(PaperAbstract.paper_url == paper_url).first()
-            if obj:
-                for name, value in abstract.items():
-                    if name == 'paper_tags':
-                        paper_tags = list()
-                        for tag in value:
-                            tag_obj = self.get_or_create_obj(session, PaperTags, **tag)
-                            paper_tags.append(tag_obj)
-                        abstract[name] = paper_tags
-                    elif name == 'paper_look_number' or name == 'paper_look_comments':
-                        if value:
-                            value = int(value)
-                        else:
-                            value = 0
-                        abstract[name] = value
-                    elif isinstance(value, list):
-                        abstract[name] = json.dumps(value)
-                obj.__init__(**abstract)
-                session.commit()
-        except Exception as e:
-            error = traceback.format_exc()
-            log.error("up_sp_abstract error: {0}".format(error))
-        finally:
-            session.close()
-
-    def add_sp_abstract(self, **abstract):
-
+    def add_sp_abstract(self, update=False, **abstract):
         session = self.Session()
         try:
             # if url not in database then add
             obj = session.query(PaperAbstract).filter(PaperAbstract.paper_url == abstract["paper_url"]).first()
+            if obj and not update:
+                return None
+
             if not obj:
-                for name, value in abstract.items():
-                    if name == 'paper_tags':
-                        paper_tags = list()
-                        for tag in value:
-                            tag_obj = self.get_or_create_obj(session, PaperTags, **tag)
-                            paper_tags.append(tag_obj)
-                        abstract[name] = paper_tags
-                    elif name == 'paper_look_number' or name == 'paper_look_comments':
-                        if value:
-                            value = int(value)
-                        else:
-                            value = 0
-                        abstract[name] = value
-                    elif isinstance(value, list):
-                        abstract[name] = json.dumps(value)
-                abstract["crawl_time"] = datetime.now()
-                paper_abstract = PaperAbstract(**abstract)
-                session.add(paper_abstract)
-                session.commit()
+                obj = PaperAbstract()
+
+            for name, value in abstract.items():
+                if name == 'paper_tags':
+                    paper_tags = list()
+                    for tag in value:
+                        tag_obj = self.get_or_create_obj(session, PaperTags, **tag)
+                        paper_tags.append(tag_obj)
+                    abstract[name] = paper_tags
+                elif name == 'paper_look_number' or name == 'paper_look_comments':
+                    if value:
+                        value = int(value)
+                    else:
+                        value = 0
+                    abstract[name] = value
+                elif isinstance(value, list):
+                    abstract[name] = json.dumps(value)
+            abstract["crawl_time"] = datetime.now()
+            obj.__init__(**abstract)
+            if not update:
+                session.add(obj)
+            session.commit()
         except Exception as e:
             error = traceback.format_exc()
             log.error("add_sp_abstract error: {0}".format(error))

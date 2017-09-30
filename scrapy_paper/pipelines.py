@@ -26,7 +26,7 @@ class ScrapyPaperPipeline(object):
     def init_env(self):
         cfg_file_path = self.cfg.get_setting_option("save_paper_file", "paper_path")
         if cfg_file_path:
-            self.file_path = os.path.abspath(cfg_file_path)
+            self.file_path = os.path.abspath(os.path.join(CURRENT_PATH, cfg_file_path.strip("\"")))
         else:
             self.file_path = FILE_PATH
 
@@ -72,7 +72,7 @@ class ScrapyPaperPipeline(object):
         spider_name = spider.name
         paper_file = self.gen_file(paper_title, paper_url, content_type, spider_name)
         self.save_paper(paper_file, content)
-        self.db.up_sp_abstract(paper_url, paper_file=os.path.basename(paper_file))
+        self.db.up_sp_abstract(paper_url=paper_url, paper_file=os.path.basename(paper_file))
         return item
 
     def sh_spider(self, item, spider):
@@ -100,4 +100,4 @@ class ScrapyPaperPipeline(object):
             spider_name = paper.paper_spider
             paper_file = self.gen_file(paper_title, paper_url, content_type, spider_name)
             self.save_paper(paper_file, content)
-            self.db.up_sp_abstract(paper_url, paper_file=paper_file)
+            self.db.up_sp_abstract(paper_url=paper_url, paper_file=paper_file)

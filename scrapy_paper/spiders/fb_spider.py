@@ -62,17 +62,23 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
         if not author_name:
             xpath = "./dl/dd/span[@class='name-head']/text()"
             author_name = self.fetch_xpath(news_info, xpath)
+        if not author_name:
+            xpath = "./dl/dd/span[@class='name']/a/text()"
+            author_name = self.fetch_xpath(news_info, xpath)
         return author_name
 
     def author_link(self, response, news_info, xpath):
-        author_name = self.fetch_xpath(news_info, xpath)
-        if not author_name:
+        author_link = self.fetch_xpath(news_info, xpath)
+        if not author_link:
             xpath = "./dl/dd/span[@class='name']/@href"
-            author_name = self.fetch_xpath(news_info, xpath)
-        if not author_name:
+            author_link = self.fetch_xpath(news_info, xpath)
+        if not author_link:
             xpath = "./dl/dd/span[@class='name-head']/@href"
-            author_name = self.fetch_xpath(news_info, xpath)
-        return author_name
+            author_link = self.fetch_xpath(news_info, xpath)
+        if not author_link:
+            xpath = "./dl/dd/span[@class='name']/a/@href"
+            author_link = self.fetch_xpath(news_info, xpath)
+        return author_link
 
     def parse(self, response):
         if not self.check_param(response, SELECTOR_NEWS_LIST):
@@ -96,8 +102,8 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
                          paper_tags=paper_tags, paper_look_number=paper_look_number,
                          paper_look_comments=paper_look_comments, paper_spider=self.name)
 
-            item, paper_url = self.make_item(response, news, SELECTOR_NEWS_INFO, dict_)
-            paper_req = self.make_paper_req(response, item, paper_url)
+            paper_req = self.gen_paper_req(response, news, SELECTOR_NEWS_INFO, dict_)
+
             if paper_req is None:
                 return
             elif isinstance(paper_req, list):
