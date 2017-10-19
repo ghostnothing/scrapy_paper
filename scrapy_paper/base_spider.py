@@ -342,9 +342,12 @@ class BaseSpider(object):
         """
         forced_crawling = self.cfg.get_option("settings", "forced_crawling")
         if forced_crawling:
-            paper_time = datetime.strptime(item[PAPER_TIME], TIME_FORMAT)
-            paper_tge = self.cfg.get_option("forced_crawling", "paper_time_ge")
-            if paper_tge and paper_time >= datetime.strptime(paper_tge.strip("\""), TIME_FORMAT):
+            if item[PAPER_TIME]:
+                paper_time = datetime.strptime(item[PAPER_TIME], TIME_FORMAT)
+                paper_tge = self.cfg.get_option("forced_crawling", "paper_time_ge")
+                if paper_tge and paper_time >= datetime.strptime(paper_tge.strip("\""), TIME_FORMAT):
+                    return True
+            else:
                 return True
         elif not self.db.exist_sp_paper(paper_url=item[PAPER_URL], paper_spider=item[PAPER_SPIDER]):
             return True
