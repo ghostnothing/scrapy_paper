@@ -79,7 +79,7 @@ class PaperAbstract(Base):
     id = Column(Integer(), primary_key=True)
     crawl_time = Column(DateTime(), nullable=False)
     paper_title = Column(Text(), nullable=False)
-    paper_url = Column(Text(), nullable=False)
+    paper_url = Column(VARCHAR(512), nullable=False, unique=True)
     author_name = Column(Text(), nullable=True)
     author_link = Column(Text(), nullable=True)
     author_identity = Column(Boolean(), nullable=True, default=False)
