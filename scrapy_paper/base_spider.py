@@ -171,7 +171,7 @@ class BaseSpider(object):
         :param response:
         :return:
         """
-        log.debug("{} start parse url: {}".format(response.meta["item"]["paper_spider"], response.url))
+        log.debug("{} start parse url: {}".format(response.meta["item"][PAPER_SPIDER], response.url))
         item = response.meta["item"]
         item[PAPER_RESPONSE] = response
         return item
@@ -330,9 +330,9 @@ class BaseSpider(object):
         # delete useless characters
         self.strip_item(item)
 
-        return item, abstract_dict[PAPER_URL]
+        return item
 
-    def forced_crawling(self, item):
+    def stop_crawling(self, item):
         """
         To determine whether to continue to crawl：
         1. If the crawler did not crawl the paper, continue to crawl;
@@ -340,56 +340,55 @@ class BaseSpider(object):
         :param item:
         :return:
         """
-        forced_crawling = self.cfg.get_option("settings", "forced_crawling")
+        forced_crawling = self.cfg.get_option("settings", "forced_crawl")
         if forced_crawling:
             if item[PAPER_TIME]:
                 paper_time = datetime.strptime(item[PAPER_TIME], TIME_FORMAT)
-                paper_tge = self.cfg.get_option("forced_crawling", "paper_time_ge")
+                paper_tge = self.cfg.get_option("forced_crawl", "paper_time_ge")
                 if paper_tge and paper_time >= datetime.strptime(paper_tge.strip("\""), TIME_FORMAT):
+                    return False
+                else:
                     return True
             else:
-                return True
+                return False
         elif not self.db.exist_sp_paper(paper_url=item[PAPER_URL], paper_spider=item[PAPER_SPIDER]):
+            return False
+        else:
             return True
-        return False
 
-    def make_paper_req(self, response, item, paper_url):
+    def make_paper_req(self, response, item):
         """
         Generate article request parameters
         :param response:
         :param item:
-        :param paper_url:
         :return:        None: stop spider;  "continue": continue next paper; [paper_url, dict]: crawl paper
         """
         continue_str = "continue"
-        paper_spider = item[PAPER_SPIDER]
+        paper_url = item[PAPER_URL]
         if not paper_url:
             return continue_str
 
-        if not self.forced_crawling(item):
+        if self.stop_crawling(item):
             return None
-
-        # add paper abstract info to database
-        if not self.db.exist_sp_paper(paper_url=paper_url):
+        elif not self.db.exist_sp_paper(paper_url=paper_url):
+            # add paper abstract info to database
             self.db.add_sp_abstract(**dict(item))
+            # crawl paper
+            if self.cfg.enabled("crawl_paper"):
+                meta_tmp = response.meta.copy()
+                meta_tmp["item"] = item
+                headers = self.make_header(paper_url)
+                return [paper_url, dict(meta=meta_tmp, callback=self.parse_paper, headers=headers)]
         else:
             # forced_crawling is True, update paper abstract info to database
-            msg = u"{} url: {} already in database".format(paper_spider, paper_url)
+            msg = u"{} url: {} already in database".format(item[PAPER_SPIDER], paper_url)
             log.debug(msg)
             self.db.up_sp_abstract(**dict(item))
-
-        # crawl paper
-        if self.cfg.enabled("save_paper_file") and self.db.exist_sp_paper(paper_url=paper_url, paper_file=""):
-            meta_tmp = response.meta.copy()
-            meta_tmp["item"] = item
-            headers = self.make_header(paper_url)
-            return [paper_url, dict(meta=meta_tmp, callback=self.parse_paper, headers=headers)]
-
-        return continue_str
+            return continue_str
 
     def gen_paper_req(self, response, news, news_info_x, dict_):
-        item, paper_url = self.make_item(response, news, news_info_x, dict_)
-        paper_req = self.make_paper_req(response, item, paper_url)
+        item = self.make_item(response, news, news_info_x, dict_)
+        paper_req = self.make_paper_req(response, item)
         return paper_req
 
     def make_next_req(self, next_page):
