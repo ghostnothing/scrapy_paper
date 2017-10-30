@@ -30,6 +30,8 @@ class SaveFile(object):
             self.file_path = os.path.abspath(os.path.join(CURRENT_PATH, cfg_file_path.strip("\"")))
         else:
             self.file_path = FILE_PATH
+        if not os.path.isdir(self.file_path):
+            os.mkdir(self.file_path)
 
     def gen_file(self, spider_name, paper_title, suffix):
         file_path = os.path.join(self.file_path, spider_name)
