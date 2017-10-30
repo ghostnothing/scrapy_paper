@@ -1,18 +1,45 @@
-
-## 功能
+## 功能说明
 
 程序尝试通过爬取行业专业类网站的文章，提取文章的标题、文本内容、发布时间、阅读人数等信息并保存到数据库中，在需要的时候从中查询，以提高信息内容的质量。
 
 除此之外，可以对文章的内容进行分析，获取更多信息。
 
-## 程序说明
+## 软件实现
 
-基于python3+scrapy实现，依赖安装包存在于install_requirements文件中
+程序由python3编写，使用了开源scrapy爬虫框架，文章摘要数据存储至mysql数据库中。
 
-支持定时执行爬虫任务:
+## 安装说明
 
-    Linux下执行 sh install_linux.sh
-    Windows下执行 install_windows.bat
+第一步，首先安装python3和mysql，参考官方文档
+
+[install python3](https://www.python.org/downloads/)
+
+[install mysql](https://www.mysql.com/downloads/)
+
+第二步，安装python包
+
+    pip install scrapy
+    pip install numpy
+    pip install sqlalchemy
+    pip install ConfigParser
+    pip install mysql-python
+    pip install bs4
+
+最后，如果是windows环境，需要额外安装：
+
+[download pywin32-221.win-amd64-py3.x.exe](https://sourceforge.net/projects/pywin32/files/pywin32/Build%20221/)
+
+## 添加定时执行爬虫任务
+
+Linux下执行
+
+    sh install_linux.sh
+
+Windows下双击执行
+
+    install_windows.bat
+
+添加后，每间隔60分钟爬虫将会被运行。
 
 ## 网站
 
