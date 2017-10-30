@@ -35,14 +35,14 @@ class Command(ScrapyCommand):
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
-            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
+            raise Exception("Invalid -a value, use -a NAME=VALUE", print_help=False)
 
     def run(self, args, opts):
         # settings = get_project_settings()
-
+        print("\r\n*********crawl all spider name************")
         spider_loader = self.crawler_process.spider_loader
         for spider_name in args or spider_loader.list():
-            print("*********crawl all spider name************" + spider_name)
+            print(spider_name)
             self.crawler_process.crawl(spider_name, **opts.spargs)
 
         self.crawler_process.start()

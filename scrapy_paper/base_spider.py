@@ -387,6 +387,7 @@ class BaseSpider(object):
             return continue_str
 
     def gen_paper_req(self, response, news, news_info_x, dict_):
+        log.debug("gen_paper_req: {}".format(dict_.get("paper_url")))
         item = self.make_item(response, news, news_info_x, dict_)
         paper_req = self.make_paper_req(response, item)
         return paper_req

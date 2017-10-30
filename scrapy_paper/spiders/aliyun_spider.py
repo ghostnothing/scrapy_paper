@@ -74,6 +74,6 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
 
         next_page = "{}-order_createtime-page_{}".format(HOME_PAGE, self.page)
         self.page += 1
+        log.debug("next_page: {}".format(next_page))
         if next_page:
             yield scrapy.http.Request(next_page, callback=self.parse)
-

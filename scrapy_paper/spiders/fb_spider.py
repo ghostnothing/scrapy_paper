@@ -111,6 +111,6 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
 
         next_page = "//div[@class='news-more']/a/@href"
         next_page = self.fetch_xpath(response, next_page)
-
+        log.debug("next_page: {}".format(next_page))
         if next_page:
             yield scrapy.http.Request(next_page, callback=self.parse)

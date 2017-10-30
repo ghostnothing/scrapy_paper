@@ -143,4 +143,6 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
 
         next_page = "{}/?&page={}".format(HOME_PAGE, self.page)
         self.page += 1
-        yield scrapy.http.Request(next_page, callback=self.parse)
+        log.debug("next_page: {}".format(next_page))
+        if next_page:
+            yield scrapy.http.Request(next_page, callback=self.parse)

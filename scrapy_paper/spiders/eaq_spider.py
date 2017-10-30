@@ -102,6 +102,7 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
                 next_page = "{}{}.shtml".format(HOME_PAGE, self.page)
                 response = urlopen(next_page)
             self.page += 1
+            log.debug("next_page: {}".format(next_page))
             yield scrapy.http.Request(next_page, callback=self.parse)
         else:
             log.debug("page: {}, max_page:{}".format(self.page, max_page))

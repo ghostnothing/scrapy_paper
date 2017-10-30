@@ -104,5 +104,6 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
         next_page = r"//nav[@class='pagination']/a[@class='older-posts']/@href"
         next_page = self.fetch_xpath(response, next_page)
         next_page = self.fix_url(response, next_page)
+        log.debug("next_page: {}".format(next_page))
         if next_page:
             yield scrapy.http.Request(next_page, callback=self.parse)

@@ -122,6 +122,7 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
                 next_page = "{}news/{}".format(HOME_PAGE, next_page)
             else:
                 next_page = "{}{}".format(HOME_PAGE, next_page)
+        log.debug("next_page: {}".format(next_page))
         if next_page:
             yield scrapy.http.Request(next_page, callback=self.parse)
         else:
