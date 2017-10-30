@@ -102,7 +102,7 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
                 return
             elif isinstance(paper_req, list):
                 yield scrapy.http.Request(paper_req[0], **paper_req[1])
-        next_page = "https://www.sec-un.org/page/{}".format(self.page)
         self.page += 1
+        next_page = "https://www.sec-un.org/page/{}".format(self.page)
         log.debug("next_page: {}".format(next_page))
         yield scrapy.http.Request(next_page, callback=self.parse)

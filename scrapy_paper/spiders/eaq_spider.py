@@ -94,6 +94,7 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
 
         max_page = "//input[@id='totalPage']/@value"
         max_page = self.fetch_xpath(response, max_page)
+        self.page += 1
         if self.page <= int(max_page) and response.text:
             next_page = "{}{}.shtml".format(HOME_PAGE, self.page)
             response = urlopen(next_page)
@@ -101,7 +102,6 @@ class ClassifyTitle(BaseSpider, scrapy.Spider):
                 self.page += 1
                 next_page = "{}{}.shtml".format(HOME_PAGE, self.page)
                 response = urlopen(next_page)
-            self.page += 1
             log.debug("next_page: {}".format(next_page))
             yield scrapy.http.Request(next_page, callback=self.parse)
         else:

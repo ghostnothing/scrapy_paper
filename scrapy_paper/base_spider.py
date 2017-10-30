@@ -11,6 +11,7 @@
 import os
 import re
 import sys
+import json
 import scrapy
 import logging
 import traceback
@@ -154,11 +155,16 @@ class Config(object):
 
 class BaseSpider(object):
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(BaseSpider, self).__init__()
-        self.page = 2
+        self.page = 1
         self.db = DataBase()
         self.cfg = Config()
+        self.init_var(**kwargs)
+
+    def init_var(self, *args, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def fetch_list(self, list_, index_):
         if index_ < len(list_):

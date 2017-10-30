@@ -34,6 +34,8 @@ class SaveFile(object):
             os.mkdir(self.file_path)
 
     def gen_file(self, spider_name, paper_title, suffix):
+        if not suffix:
+            suffix = ""
         file_path = os.path.join(self.file_path, spider_name)
         if not os.path.isdir(file_path):
             os.mkdir(file_path)
@@ -50,7 +52,7 @@ class SaveFile(object):
 
     def guess_extension(self, content_type):
         if content_type:
-            suffix = mimetypes.guess_extension(content_type.lower())
+            suffix = mimetypes.guess_extension(content_type.decode().lower())
         else:
             suffix = ""
         return suffix
